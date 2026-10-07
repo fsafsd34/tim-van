@@ -76,7 +76,7 @@ def loc_theo_thanh_dieu(danh_sach, tu_khoa):
     return ket_qua
 
 
-def tim_noi_lai(tu_khoa):
+def lay_ket_qua_noi_lai(tu_khoa):
     url = "https://vuatiengviet.vn/tim-van"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
@@ -183,7 +183,7 @@ if tim_noi_lai:
     else:
         with st.spinner("Đang tìm nói lái trên Vựa Tiếng Việt..."):
             try:
-                ket_qua_noi_lai = tim_noi_lai(tu_khoa)
+                ket_qua_noi_lai = lay_ket_qua_noi_lai(tu_khoa)
                 if ket_qua_noi_lai:
                     st.markdown(f"**{len(ket_qua_noi_lai)} kết quả nói lái**")
                     cards = "".join(
