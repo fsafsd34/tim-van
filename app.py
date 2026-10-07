@@ -93,9 +93,21 @@ def lay_ket_qua_noi_lai(tu_khoa):
     response.raise_for_status()
     response.encoding = "utf-8"
 
+    van_ban = response.text
+    van_ban_thuong = van_ban.casefold()
+    vi_tri_noi_lai = van_ban_thuong.find("nói lái")
+    if vi_tri_noi_lai < 0:
+        return []
+
+    vi_tri_freestyle = van_ban_thuong.find("freestyle", vi_tri_noi_lai)
+    if vi_tri_freestyle >= 0:
+        van_ban = van_ban[vi_tri_noi_lai:vi_tri_freestyle]
+    else:
+        van_ban = van_ban[vi_tri_noi_lai:]
+
     pattern = r'"className":"leading-tight","children":"((?:\\.|[^"\\])*)"'
     ket_qua = []
-    for noi_dung in re.findall(pattern, response.text):
+    for noi_dung in re.findall(pattern, van_ban):
         tu = html.unescape(noi_dung.replace('\\"', '"').replace('\\n', ' ')).strip()
         if tu and tu not in ket_qua:
             ket_qua.append(tu)
