@@ -1,10 +1,10 @@
 import html
 import re
 import unicodedata
-import urllib.parse
 
 import requests
 import streamlit as st
+
 
 st.set_page_config(page_title="Tìm Vần", page_icon="🔎", layout="centered")
 
@@ -63,31 +63,44 @@ def loc_theo_thanh_dieu(danh_sach, tu_khoa):
 
 
 def tim_van_xuoi(tu_khoa, cap_nhat):
-    query_encoded = urllib.parse.quote_plus(tu_khoa)
-    url = f"https://vuatiengviet.vn/?query={query_encoded}&_rsc=8kzk2"
+    url = "https://vuatiengviet.vn/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
         "Accept": "*/*",
         "RSC": "1",
-        "Referer": "https://vuatiengviet.vn/",
+        "Referer": url,
     }
     pattern = r'"className":"leading-tight","children":"([^"]+)"'
     ket_qua = []
     da_gap = set()
 
-    response = requests.get(url, headers=headers, timeout=20)
-    response.raise_for_status()
-    response.encoding = "utf-8"
-    
-    ket_qua_web = re.findall(pattern, response.text)
+    for trang in range(1, 101):
+        response = requests.get(
+            url,
+            params={
+                "query": tu_khoa,
+                "type": "van-xuoi",
+                "page": trang,
+                "_rsc": "8kzk2",
+            },
+            headers=headers,
+            timeout=20,
+        )
+        response.raise_for_status()
+        response.encoding = "utf-8"
+        ket_qua_trang = re.findall(pattern, response.text)
+        if not ket_qua_trang:
+            break
 
-    # Giữ nguyên logic lọc theo thanh điệu của bạn
-    for tu in loc_theo_thanh_dieu(ket_qua_web, tu_khoa):
-        if tu not in da_gap:
-            da_gap.add(tu)
-            ket_qua.append(tu)
-            
-    cap_nhat(ket_qua)
+        for tu in loc_theo_thanh_dieu(ket_qua_trang, tu_khoa):
+            if tu not in da_gap:
+                da_gap.add(tu)
+                ket_qua.append(tu)
+        cap_nhat(ket_qua)
+
+        if len(ket_qua_trang) < 20:
+            break
+
     return ket_qua
 
 
@@ -116,7 +129,7 @@ if tim_kiem:
                 for tu in ket_qua
             )
             ket_qua_khu_vuc.markdown(
-                f"**{len(ket_qua)} kết quả phù hợp thanh điệu:**" + cards,
+                f"**{len(ket_qua)} kết quả**" + cards,
                 unsafe_allow_html=True,
             )
 
@@ -124,7 +137,7 @@ if tim_kiem:
             ket_qua = tim_van_xuoi(tu_khoa, cap_nhat)
             spinner.empty()
             if not ket_qua:
-                ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp thanh điệu.")
+                ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp.")
         except requests.RequestException:
             spinner.empty()
             ket_qua_khu_vuc.error(
