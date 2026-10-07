@@ -22,7 +22,17 @@ st.markdown(
     .result-card { background: white; border: 1px solid #e6eaf2; border-radius: 12px;
         padding: 13px 16px; color: #18243b; font-size: 1.05rem;
         box-shadow: 0 2px 8px rgba(20, 35, 70, .04); }
-    .result-row { margin-bottom: 10px; }
+    .results-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px; margin-top: 12px; }
+    @media (max-width: 700px) {
+        .results-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .result-card { padding: 8px 6px; font-size: .88rem; line-height: 1.2;
+            border-radius: 8px; overflow-wrap: anywhere; }
+    }
+    @media (max-width: 380px) {
+        .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+        .result-card { padding: 7px 5px; font-size: .82rem; }
+    }
     .loader-wrap { display: flex; justify-content: center; padding: 22px; }
     .loader { width: 28px; height: 28px; border: 3px solid #dce4ff;
         border-top-color: #315efb; border-radius: 50%; animation: spin .75s linear infinite; }
@@ -127,13 +137,14 @@ if tim_kiem:
         def cap_nhat(ket_qua):
             with ket_qua_khu_vuc.container():
                 st.markdown(f"**{len(ket_qua)} kết quả**")
-                for bat_dau in range(0, len(ket_qua), 5):
-                    cot = st.columns(5)
-                    for o, tu in zip(cot, ket_qua[bat_dau : bat_dau + 5]):
-                        o.markdown(
-                            f'<div class="result-card">{html.escape(tu)}</div>',
-                            unsafe_allow_html=True,
-                        )
+                cards = "".join(
+                    f'<div class="result-card">{html.escape(tu)}</div>'
+                    for tu in ket_qua
+                )
+                st.markdown(
+                    f'<div class="results-grid">{cards}</div>',
+                    unsafe_allow_html=True,
+                )
 
         try:
             ket_qua = tim_van_xuoi(tu_khoa, cap_nhat)
