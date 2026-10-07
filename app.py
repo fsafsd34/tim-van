@@ -82,6 +82,7 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
         "Referer": url,
     }
     pattern = r'"className":"leading-tight","children":"([^"]+)"'
+    chi_lay_tieng_cuoi = len(tu_khoa.split()) == 1
     ket_qua = []
     da_gap = set()
 
@@ -104,9 +105,10 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
             break
 
         for tu in loc_theo_thanh_dieu(ket_qua_trang, tu_khoa):
-            if tu not in da_gap:
-                da_gap.add(tu)
-                ket_qua.append(tu)
+            hien_thi = tu.split()[-1] if chi_lay_tieng_cuoi else tu
+            if hien_thi not in da_gap:
+                da_gap.add(hien_thi)
+                ket_qua.append(hien_thi)
         cap_nhat(ket_qua)
 
         if len(ket_qua_trang) < 20:
