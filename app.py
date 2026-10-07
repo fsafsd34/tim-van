@@ -1,10 +1,10 @@
 import html
 import re
 import unicodedata
+import urllib.parse
 
 import requests
 import streamlit as st
-
 
 st.set_page_config(page_title="Tìm Vần", page_icon="🔎", layout="centered")
 
@@ -63,44 +63,31 @@ def loc_theo_thanh_dieu(danh_sach, tu_khoa):
 
 
 def tim_van_xuoi(tu_khoa, cap_nhat):
-    url = "https://vuatiengviet.vn/"
+    query_encoded = urllib.parse.quote_plus(tu_khoa)
+    url = f"https://vuatiengviet.vn/?query={query_encoded}&_rsc=8kzk2"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
         "Accept": "*/*",
         "RSC": "1",
-        "Referer": url,
+        "Referer": "https://vuatiengviet.vn/",
     }
     pattern = r'"className":"leading-tight","children":"([^"]+)"'
     ket_qua = []
     da_gap = set()
 
-    for trang in range(1, 101):
-        response = requests.get(
-            url,
-            params={
-                "query": tu_khoa,
-                "type": "van-xuoi",
-                "page": trang,
-                "_rsc": "8kzk2",
-            },
-            headers=headers,
-            timeout=20,
-        )
-        response.raise_for_status()
-        response.encoding = "utf-8"
-        ket_qua_trang = re.findall(pattern, response.text)
-        if not ket_qua_trang:
-            break
+    response = requests.get(url, headers=headers, timeout=20)
+    response.raise_for_status()
+    response.encoding = "utf-8"
+    
+    ket_qua_web = re.findall(pattern, response.text)
 
-        for tu in loc_theo_thanh_dieu(ket_qua_trang, tu_khoa):
-            if tu not in da_gap:
-                da_gap.add(tu)
-                ket_qua.append(tu)
-        cap_nhat(ket_qua)
-
-        if len(ket_qua_trang) < 20:
-            break
-
+    # Giữ nguyên logic lọc theo thanh điệu của bạn
+    for tu in loc_theo_thanh_dieu(ket_qua_web, tu_khoa):
+        if tu not in da_gap:
+            da_gap.add(tu)
+            ket_qua.append(tu)
+            
+    cap_nhat(ket_qua)
     return ket_qua
 
 
@@ -129,57 +116,17 @@ if tim_kiem:
                 for tu in ket_qua
             )
             ket_qua_khu_vuc.markdown(
-                f"**{len(ket_qua)} kết quả**" + cards,
+                f"**{len(ket_qua)} kết quả phù hợp thanh điệu:**" + cards,
                 unsafe_allow_html=True,
             )
 
         try:
             ket_qua = tim_van_xuoi(tu_khoa, cap_nhat)
-            spinner.import streamlit as st
-import requests
-import urllib.parse
-import re
-
-# Cấu hình trang
-st.set_page_config(page_title="Tìm Vần Tiếng Việt", page_icon="🔍")
-st.title("🔍 Tra Cứu Vần Tiếng Việt")
-
-# Ô nhập từ trên web
-tu_khoa = st.text_input("Nhập từ cần tìm (ví dụ: trong veo):", "")
-
-def tim_van(tu):
-    query_encoded = urllib.parse.quote_plus(tu)
-    url = f"https://vuatiengviet.vn/?query={query_encoded}&_rsc=8kzk2"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-        "Accept": "*/*",
-        "RSC": "1",
-        "Referer": "https://vuatiengviet.vn/"
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.encoding = 'utf-8' # Đảm bảo không lỗi font
-        pattern = r'"className":"leading-tight","children":"([^"]+)"'
-        ket_qua = re.findall(pattern, response.text)
-        return list(dict.fromkeys(ket_qua))
-    except Exception as e:
-        st.error(f"Lỗi kết nối: {e}")
-        return []
-
-# Bấm nút hoặc nhấn Enter
-if st.button("Tìm kiếm") or tu_khoa:
-    if tu_khoa.strip():
-        with st.spinner("Đang tìm dữ liệu..."):
-            danh_sach = tim_van(tu_khoa.strip())
-            
-        if danh_sach:
-            st.success(f"Tìm thấy {len(danh_sach)} kết quả:")
-            for i, tu in enumerate(danh_sach, 1):
-                st.write(f"**{i}.** {tu}")
-        else:
-            st.warning("Không tìm thấy kết quả phù hợp.")empty()
+            spinner.empty()
             if not ket_qua:
-                ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp.")
+                ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp thanh điệu.")
         except requests.RequestException:
             spinner.empty()
-            ket_qua_khu_vuc.error("Không thể kết nối để tải kết quả. Vui lòng thử lại.")
+            ket_qua_khu_vuc.error(
+                "Không thể kết nối để tải kết quả. Vui lòng thử lại."
+            )
