@@ -22,6 +22,10 @@ st.markdown(
     div.stButton > button { width: 100%; border-radius: 12px; min-height: 46px;
         background: #315efb; color: white; border: 0; font-weight: 650; }
     div.stButton > button:hover { background: #244bd4; color: white; }
+    div.st-key-clear_search_text button { width: 42px; min-height: 42px;
+        padding: 0; background: white; color: #667085; border: 1px solid #d0d5dd;
+        border-radius: 10px; font-size: 1.4rem; }
+    div.st-key-clear_search_text button:hover { background: #f2f4f7; color: #18243b; }
     .result-card { background: white; border: 1px solid #e6eaf2; border-radius: 12px;
         padding: 13px 16px; color: #18243b; font-size: 1.05rem;
         box-shadow: 0 2px 8px rgba(20, 35, 70, .04); }
@@ -175,16 +179,28 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
     return ket_qua
 
 
-if st.button("Xóa nhanh ô nhập", key="clear_search_text"):
+def xoa_noi_dung_tim_kiem():
     st.session_state.search_text = ""
 
-with st.form("search_form"):
-    tu_khoa = st.text_input(
+
+cot_nhap, cot_xoa = st.columns([10, 1], vertical_alignment="bottom")
+with cot_nhap:
+    st.text_input(
         "Từ khóa",
         placeholder="Nhập từ hoặc cụm từ cần tìm...",
         label_visibility="collapsed",
         key="search_text",
-    ).strip()
+    )
+with cot_xoa:
+    st.button(
+        "×",
+        key="clear_search_text",
+        help="Xóa nội dung tìm kiếm",
+        on_click=xoa_noi_dung_tim_kiem,
+    )
+
+with st.form("search_form"):
+    tu_khoa = st.session_state.search_text.strip()
     nut_tim_kiem, nut_noi_lai = st.columns(2)
     tim_kiem = nut_tim_kiem.form_submit_button("Tìm vần xuôi")
     tim_noi_lai = nut_noi_lai.form_submit_button("Tìm nói lái")
