@@ -257,10 +257,26 @@ if tim_kiem:
             luu_lich_su("Tìm vần xuôi", tu_khoa, ket_qua)
             if not ket_qua:
                 ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp.")
+        except requests.HTTPError as exc:
+            spinner.empty()
+            ma_loi = exc.response.status_code if exc.response is not None else "không rõ"
+            ket_qua_khu_vuc.error(
+                f"Nguồn tìm vần trả lỗi HTTP {ma_loi}. Vui lòng thử lại sau."
+            )
+        except requests.Timeout:
+            spinner.empty()
+            ket_qua_khu_vuc.error(
+                "Nguồn tìm vần phản hồi quá chậm. Vui lòng thử lại sau."
+            )
+        except requests.ConnectionError:
+            spinner.empty()
+            ket_qua_khu_vuc.error(
+                "Máy chủ không kết nối được tới nguồn tìm vần. Vui lòng thử lại sau."
+            )
         except requests.RequestException:
             spinner.empty()
             ket_qua_khu_vuc.error(
-                "Không thể kết nối để tải kết quả. Vui lòng thử lại."
+                "Đã xảy ra lỗi khi tải kết quả tìm vần. Vui lòng thử lại."
             )
 
 with st.expander("Lịch sử tìm kiếm", expanded=False):
