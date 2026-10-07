@@ -8,6 +8,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Tìm Vần", page_icon="🔎", layout="centered")
 
+st.session_state.setdefault("search_history", [])
+st.session_state.setdefault("search_text", "")
+
 st.markdown(
     """
     <style>
@@ -73,6 +76,40 @@ def loc_theo_thanh_dieu(danh_sach, tu_khoa):
     return ket_qua
 
 
+def tao_noi_lai(cum_tu):
+    cac_tieng = cum_tu.split()
+    if len(cac_tieng) != 2:
+        return None
+
+    am_dau_tieng_viet = (
+        "ngh", "ng", "nh", "kh", "gh", "ph", "th", "tr", "ch",
+        "gi", "qu", "b", "c", "d", "đ", "g", "h", "k", "l",
+        "m", "n", "p", "r", "s", "t", "v", "x",
+    )
+
+    def tach_am_dau(tieng):
+        tieng = unicodedata.normalize("NFD", tieng.lower())
+        for am_dau in am_dau_tieng_viet:
+            if tieng.startswith(am_dau):
+                return am_dau, tieng[len(am_dau):]
+        return "", tieng
+
+    am_dau_1, van_1 = tach_am_dau(cac_tieng[0])
+    am_dau_2, van_2 = tach_am_dau(cac_tieng[1])
+    noi_lai = (am_dau_1 + van_2, am_dau_2 + van_1)
+    return " ".join(
+        unicodedata.normalize("NFC", tieng) for tieng in noi_lai
+    )
+
+
+def luu_lich_su(loai, tu_khoa, ket_qua):
+    st.session_state.search_history.insert(
+        0,
+        {"loai": loai, "tu_khoa": tu_khoa, "ket_qua": list(ket_qua)},
+    )
+    del st.session_state.search_history[20:]
+
+
 def tim_van_xuoi(tu_khoa, cap_nhat):
     url = "https://vuatiengviet.vn/"
     headers = {
@@ -126,13 +163,27 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
     return ket_qua
 
 
+if st.button("Xóa nhanh ô nhập", key="clear_search_text"):
+    st.session_state.search_text = ""
+
 with st.form("search_form"):
     tu_khoa = st.text_input(
         "Từ khóa",
         placeholder="Nhập từ hoặc cụm từ cần tìm...",
         label_visibility="collapsed",
+        key="search_text",
     ).strip()
-    tim_kiem = st.form_submit_button("Tìm vần xuôi")
+    nut_tim_kiem, nut_noi_lai = st.columns(2)
+    tim_kiem = nut_tim_kiem.form_submit_button("Tìm vần xuôi")
+    tim_noi_lai = nut_noi_lai.form_submit_button("Tìm nói lái")
+
+if tim_noi_lai:
+    ket_qua_noi_lai = tao_noi_lai(tu_khoa)
+    if ket_qua_noi_lai is None:
+        st.warning("Vui lòng nhập đúng hai tiếng để tìm nói lái.")
+    else:
+        st.success(f"Nói lái gợi ý: **{ket_qua_noi_lai}**")
+        luu_lich_su("Nói lái", tu_khoa, [ket_qua_noi_lai])
 
 if tim_kiem:
     if not tu_khoa:
@@ -160,6 +211,7 @@ if tim_kiem:
         try:
             ket_qua = tim_van_xuoi(tu_khoa, cap_nhat)
             spinner.empty()
+            luu_lich_su("Tìm vần xuôi", tu_khoa, ket_qua)
             if not ket_qua:
                 ket_qua_khu_vuc.info("Không tìm thấy kết quả phù hợp.")
         except requests.RequestException:
@@ -167,3 +219,14 @@ if tim_kiem:
             ket_qua_khu_vuc.error(
                 "Không thể kết nối để tải kết quả. Vui lòng thử lại."
             )
+
+with st.expander("Lịch sử tìm kiếm", expanded=False):
+    if st.button("Xóa lịch sử", key="clear_search_history"):
+        st.session_state.search_history.clear()
+
+    if not st.session_state.search_history:
+        st.caption("Chưa có lượt tìm kiếm nào trong phiên này.")
+    else:
+        for muc in st.session_state.search_history:
+            st.text(f'{muc["loai"]}: {muc["tu_khoa"]}')
+            st.caption(", ".join(muc["ket_qua"]) or "Không có kết quả")
