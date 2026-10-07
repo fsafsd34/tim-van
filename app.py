@@ -76,30 +76,30 @@ def loc_theo_thanh_dieu(danh_sach, tu_khoa):
     return ket_qua
 
 
-def tao_noi_lai(cum_tu):
-    cac_tieng = cum_tu.split()
-    if len(cac_tieng) != 2:
-        return None
-
-    am_dau_tieng_viet = (
-        "ngh", "ng", "nh", "kh", "gh", "ph", "th", "tr", "ch",
-        "gi", "qu", "b", "c", "d", "đ", "g", "h", "k", "l",
-        "m", "n", "p", "r", "s", "t", "v", "x",
+def tim_noi_lai(tu_khoa):
+    url = "https://vuatiengviet.vn/tim-van"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "RSC": "1",
+        "Referer": "https://vuatiengviet.vn/tim-van?type=noi-lai",
+    }
+    response = requests.get(
+        url,
+        params={"query": tu_khoa, "type": "noi-lai", "_rsc": "8kzk2"},
+        headers=headers,
+        timeout=30,
     )
+    response.raise_for_status()
+    response.encoding = "utf-8"
 
-    def tach_am_dau(tieng):
-        tieng = unicodedata.normalize("NFD", tieng.lower())
-        for am_dau in am_dau_tieng_viet:
-            if tieng.startswith(am_dau):
-                return am_dau, tieng[len(am_dau):]
-        return "", tieng
-
-    am_dau_1, van_1 = tach_am_dau(cac_tieng[0])
-    am_dau_2, van_2 = tach_am_dau(cac_tieng[1])
-    noi_lai = (am_dau_1 + van_2, am_dau_2 + van_1)
-    return " ".join(
-        unicodedata.normalize("NFC", tieng) for tieng in noi_lai
-    )
+    pattern = r'"className":"leading-tight","children":"((?:\\.|[^"\\])*)"'
+    ket_qua = []
+    for noi_dung in re.findall(pattern, response.text):
+        tu = html.unescape(noi_dung.replace('\\"', '"').replace('\\n', ' ')).strip()
+        if tu and tu not in ket_qua:
+            ket_qua.append(tu)
+    return ket_qua
 
 
 def luu_lich_su(loai, tu_khoa, ket_qua):
@@ -178,12 +178,27 @@ with st.form("search_form"):
     tim_noi_lai = nut_noi_lai.form_submit_button("Tìm nói lái")
 
 if tim_noi_lai:
-    ket_qua_noi_lai = tao_noi_lai(tu_khoa)
-    if ket_qua_noi_lai is None:
-        st.warning("Vui lòng nhập đúng hai tiếng để tìm nói lái.")
+    if not tu_khoa:
+        st.warning("Vui lòng nhập từ hoặc cụm từ cần tìm nói lái.")
     else:
-        st.success(f"Nói lái gợi ý: **{ket_qua_noi_lai}**")
-        luu_lich_su("Nói lái", tu_khoa, [ket_qua_noi_lai])
+        with st.spinner("Đang tìm nói lái trên Vựa Tiếng Việt..."):
+            try:
+                ket_qua_noi_lai = tim_noi_lai(tu_khoa)
+                if ket_qua_noi_lai:
+                    st.markdown(f"**{len(ket_qua_noi_lai)} kết quả nói lái**")
+                    cards = "".join(
+                        f'<div class="result-card">{html.escape(tu)}</div>'
+                        for tu in ket_qua_noi_lai
+                    )
+                    st.markdown(
+                        f'<div class="results-grid">{cards}</div>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.info("Trang nguồn không trả về kết quả nói lái.")
+                luu_lich_su("Nói lái", tu_khoa, ket_qua_noi_lai)
+            except requests.RequestException:
+                st.error("Không thể kết nối tới Vựa Tiếng Việt để tìm nói lái.")
 
 if tim_kiem:
     if not tu_khoa:
