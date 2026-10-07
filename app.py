@@ -104,7 +104,16 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
         if not ket_qua_trang:
             break
 
-        for tu in loc_theo_thanh_dieu(ket_qua_trang, tu_khoa):
+        if chi_lay_tieng_cuoi:
+            cac_tu_phu_hop = []
+            for tu in ket_qua_trang:
+                cac_tieng = tu.split()
+                if cac_tieng and thanh_dieu(cac_tieng[-1]) == thanh_dieu(tu_khoa):
+                    cac_tu_phu_hop.append(tu)
+        else:
+            cac_tu_phu_hop = loc_theo_thanh_dieu(ket_qua_trang, tu_khoa)
+
+        for tu in cac_tu_phu_hop:
             hien_thi = tu.split()[-1] if chi_lay_tieng_cuoi else tu
             if hien_thi not in da_gap:
                 da_gap.add(hien_thi)
