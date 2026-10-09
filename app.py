@@ -52,13 +52,13 @@ st.markdown(
     @media (max-width: 700px) {
         .block-container { padding: 1.5rem .5rem 2rem; }
         .results-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-        .result-card { min-width: 0; padding: 6px 3px; font-size: .72rem;
+        .result-card { min-width: 0; padding: 6px 3px; font-size: .82rem;
             line-height: 1.15; border-radius: 6px; overflow-wrap: anywhere;
             word-break: break-word; text-align: center; }
     }
     @media (max-width: 380px) {
         .results-grid { gap: 3px; }
-        .result-card { padding: 5px 2px; font-size: .64rem; }
+        .result-card { padding: 5px 2px; font-size: .74rem; }
     }
     .loader-wrap { display: flex; justify-content: center; padding: 22px; }
     .loader { width: 28px; height: 28px; border: 3px solid #dce4ff;
