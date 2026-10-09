@@ -3,7 +3,9 @@ import re
 import unicodedata
 
 import requests
+from requests.adapters import HTTPAdapter
 import streamlit as st
+from urllib3.util.retry import Retry
 
 
 st.set_page_config(page_title="Tìm Vần", page_icon="🔎", layout="centered")
@@ -11,11 +13,27 @@ st.set_page_config(page_title="Tìm Vần", page_icon="🔎", layout="centered")
 st.session_state.setdefault("search_history", [])
 st.session_state.setdefault("search_text", "")
 
+
+def get_co_thu_lai(url, **kwargs):
+    retry = Retry(
+        total=2,
+        connect=2,
+        read=2,
+        status=2,
+        backoff_factor=0.7,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset(["GET"]),
+        respect_retry_after_header=True,
+    )
+    with requests.Session() as session:
+        session.mount("https://", HTTPAdapter(max_retries=retry))
+        return session.get(url, **kwargs)
+
 st.markdown(
     """
     <style>
     .stApp { background: #f5f7fb; }
-    .block-container { max-width: 820px; padding-top: 3rem; }
+    .block-container { width: 100%; max-width: 820px; padding-top: 3rem; }
     .hero { text-align: center; margin-bottom: 1.8rem; }
     .hero h1 { color: #18243b; font-size: 2.35rem; margin-bottom: .35rem; }
     .hero p { color: #667085; font-size: 1rem; margin: 0; }
@@ -32,13 +50,15 @@ st.markdown(
     .results-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px; margin-top: 12px; }
     @media (max-width: 700px) {
-        .results-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-        .result-card { padding: 8px 6px; font-size: .88rem; line-height: 1.2;
-            border-radius: 8px; overflow-wrap: anywhere; }
+        .block-container { padding: 1.5rem .5rem 2rem; }
+        .results-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+        .result-card { min-width: 0; padding: 6px 3px; font-size: .72rem;
+            line-height: 1.15; border-radius: 6px; overflow-wrap: anywhere;
+            word-break: break-word; text-align: center; }
     }
     @media (max-width: 380px) {
-        .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-        .result-card { padding: 7px 5px; font-size: .82rem; }
+        .results-grid { gap: 3px; }
+        .result-card { padding: 5px 2px; font-size: .64rem; }
     }
     .loader-wrap { display: flex; justify-content: center; padding: 22px; }
     .loader { width: 28px; height: 28px; border: 3px solid #dce4ff;
@@ -88,7 +108,7 @@ def lay_ket_qua_noi_lai(tu_khoa):
         "RSC": "1",
         "Referer": "https://vuatiengviet.vn/tim-van?type=noi-lai",
     }
-    response = requests.get(
+    response = get_co_thu_lai(
         url,
         params={"query": tu_khoa, "type": "noi-lai", "_rsc": "8kzk2"},
         headers=headers,
@@ -140,7 +160,7 @@ def tim_van_xuoi(tu_khoa, cap_nhat):
     da_gap = set()
 
     for trang in range(1, 101):
-        response = requests.get(
+        response = get_co_thu_lai(
             url,
             params={
                 "query": tu_khoa,
